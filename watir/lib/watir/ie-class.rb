@@ -354,6 +354,10 @@ module Watir
     def goto(url)
       @ie.navigate(url)
       wait
+      if self.title == "Certificate Error: Navigation Blocked"
+        #handle security error in IE 7, IE 8 shows up as a webpage and not dialog
+        self.link(:id, "overridelink").click
+      end
       return @down_load_time
     end
     
@@ -480,10 +484,26 @@ module Watir
       @down_load_time = 0.0
       a_moment = 0.2 # seconds
       start_load_time = Time.now
-
+      outval = ' ' * 30
+      popwndtitle = ''
       begin      
         while @ie.busy # XXX need to add time out
           sleep a_moment
+          # 1-SECURITY INFORMATION - PAGE CONTAINS BOTH SECURE AND INSECURE ITEMS YES-6
+          # 2-Security Alert - Certificate error YES-1
+          pophwnd = Win32API.new("user32", "GetWindow", 'Li', 'L').Call(@ie.hwnd.to_i, 6)
+          # only handle if there is a popup and handle only 2 popups, if any other popups occur return.
+          if pophwnd !=0
+            Win32API.new("user32", "GetWindowText", 'Lpi', 'L').Call(pophwnd,outval,30)
+            popwndtitle = outval.rstrip.chomp("\000")
+            return 0 if !(popwndtitle.include?("Security Alert") || popwndtitle.include?("Security Information"))
+            cntrlhwndYES = Win32API.new("user32", "GetDlgItem", 'Li', 'L').Call(pophwnd, 1)
+            Win32API.new("user32", "SendMessage",'LLLL','L').Call(cntrlhwndYES, 0x0006, 1,0)
+            Win32API.new("user32", "SendMessage",'LLLL','L').Call(cntrlhwndYES, 0x00F5, 0,0)
+            cntrlhwndYES = Win32API.new("user32", "GetDlgItem", 'Li', 'L').Call(pophwnd, 6)
+            Win32API.new("user32", "SendMessage",'LLLL','L').Call(cntrlhwndYES, 0x0006, 1,0)
+            Win32API.new("user32", "SendMessage",'LLLL','L').Call(cntrlhwndYES, 0x00F5, 0,0)
+          end
         end
         until @ie.readyState == READYSTATE_COMPLETE do
           sleep a_moment
