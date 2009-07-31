@@ -354,9 +354,11 @@ module Watir
     def goto(url)
       @ie.navigate(url)
       wait
+      # added by Paul Tony Thomas - handles certificate errors in ie7 & ie8
       if self.title == "Certificate Error: Navigation Blocked"
         #handle security error in IE 7, IE 8 shows up as a webpage and not dialog
         self.link(:id, "overridelink").click
+        wait
       end
       return @down_load_time
     end
@@ -489,6 +491,7 @@ module Watir
       begin      
         while @ie.busy # XXX need to add time out
           sleep a_moment
+          # added by Paul Tony Thomas - Handles below 2 windows
           # 1-SECURITY INFORMATION - PAGE CONTAINS BOTH SECURE AND INSECURE ITEMS YES-6
           # 2-Security Alert - Certificate error YES-1
           pophwnd = Win32API.new("user32", "GetWindow", 'Li', 'L').Call(@ie.hwnd.to_i, 6)
