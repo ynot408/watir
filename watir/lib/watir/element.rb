@@ -263,6 +263,17 @@ module Watir
       highlight(:clear)
     end
     
+    # Executes fire_event without blocking.
+    #   usage: allows a generic way to fire javascript events on page objects such as "onMouseOver", "onClick", etc.
+    def fire_event_no_wait(event)
+      assert_enabled
+      
+      highlight(:set)
+      object = "#{self.class}.new(self, :unique_number, #{self.unique_number})"
+      @page_container.eval_in_spawned_process(object + ".fire_event(\"#{event}\")")
+      highlight(:clear)
+    end
+    
     # This method sets focus on the active element.
     #   raises: UnknownObjectException  if the object is not found
     #           ObjectDisabledException if the object is currently disabled
